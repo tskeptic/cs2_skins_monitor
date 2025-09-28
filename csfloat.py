@@ -1,30 +1,17 @@
 
 
 import os
-import csv
 import time
 import requests
 import datetime
-from dotenv import load_dotenv
+import dotenv
 import tqdm
 
-load_dotenv()
+dotenv.load_dotenv()
 
 CSFLOAT_BASE_URL = "https://csfloat.com/api/v1"
-ORDERS_BOOK_FPATH = "data/orders_book.csv"
 HEADERS = {'Authorization': os.getenv("CSFLOAT_API_KEY")}
-
-
-def load_orders_book(fpath: str = ORDERS_BOOK_FPATH) -> list[dict]:
-    """Loads orders data into a list of dicts"""
-    data = []
-    with open(fpath, mode='r', newline='', encoding='utf-8') as csvfile:
-        csv_reader = csv.DictReader(csvfile, delimiter=';', quotechar='"')
-        for row in csv_reader:
-            if row.get('paid'):
-                row['paid'] = float(row['paid'])
-            data.append(row)
-    return data
+CSF_SELL_FEE = 0.021
 
 
 def get_listings(skin_name: str, qty: int = 3) -> list[dict]:
