@@ -6,12 +6,23 @@ import requests
 import datetime
 import dotenv
 import tqdm
+import requests_cache
 
 dotenv.load_dotenv()
+
+requests_cache.install_cache(
+    'cache_csf',
+    expire_after=60*60*4,
+    allowable_codes=(200,),
+    allowable_methods=('GET', 'POST'),
+    ignored_parameters=('Authorization'),
+    stale_if_error=False,
+    )
 
 CSFLOAT_BASE_URL = "https://csfloat.com/api/v1"
 HEADERS = {'Authorization': os.getenv("CSFLOAT_API_KEY")}
 CSF_SELL_FEE = 0.021
+GLOBAL_POST_REQUEST_SLEEP = 0.7
 
 
 def get_listings(skin_name: str, qty: int = 3) -> list[dict]:
@@ -19,6 +30,8 @@ def get_listings(skin_name: str, qty: int = 3) -> list[dict]:
     payload = {'limit': qty, 'sort_by': 'lowest_price', 'type': 'buy_now', 'market_hash_name': skin_name}
     req = requests.get(f'{CSFLOAT_BASE_URL}/listings', headers=HEADERS, params=payload)
     req.raise_for_status()
+    if not req.from_cache:
+        time.sleep(GLOBAL_POST_REQUEST_SLEEP)
     return req.json()['data']
 
 
@@ -28,6 +41,8 @@ def get_buy_orders(listing: dict, qty: int = 5) -> list[dict]:
     payload = {'limit': qty}
     req = requests.get(f'{CSFLOAT_BASE_URL}/listings/{listing_id}/buy-orders', headers=HEADERS, params=payload)
     req.raise_for_status()
+    if not req.from_cache:
+        time.sleep(GLOBAL_POST_REQUEST_SLEEP)
     return req.json()
 
 
@@ -35,12 +50,13 @@ def get_sales_graph(skin_name: str) -> list[dict]:
     """Obtains historical data of avg/median sale price"""
     req = requests.get(f'{CSFLOAT_BASE_URL}/history/{skin_name}/graph', headers=HEADERS)
     req.raise_for_status()
+    if not req.from_cache:
+        time.sleep(GLOBAL_POST_REQUEST_SLEEP)
     return req.json()
 
 
 def gather_current_prices(orders_data: list[dict]) -> list[dict]:
     """Collects current info of prices for each item from csfloat"""
-    sleep_time = 0.7
     min_buy_orders_qty = 2
     history_period = 3
     current_prices_data = []
@@ -51,15 +67,12 @@ def gather_current_prices(orders_data: list[dict]) -> list[dict]:
         listings = get_listings(skin)
         lowest_sell_price = listings[0]['price'] / 100
         estimated_price = listings[0]['reference'].get('predicted_price', listings[0]['reference'].get('base_price')) / 100
-        time.sleep(sleep_time)
         buy_orders = get_buy_orders(listings[0])
         filtered_buy_orders = [b for b in buy_orders if b['qty'] >= min_buy_orders_qty]
         max_buy_order_price = filtered_buy_orders[0]['price'] / 100
-        time.sleep(sleep_time)
         sales_history = get_sales_graph(skin)[:history_period]
         avg_history_sold_count = int(sum([i['count'] for i in sales_history]) / history_period)
         avg_history_sold_price = round(sum([i['avg_price'] for i in sales_history]) / history_period / 100, 2)
-        time.sleep(sleep_time)
         doc = {
             'fetch_date': str(datetime.datetime.now().date()),
             'name': skin,
