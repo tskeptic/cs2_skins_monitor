@@ -21,7 +21,7 @@ requests_cache.install_cache(
 
 CSFLOAT_BASE_URL = "https://csfloat.com/api/v1"
 HEADERS = {'Authorization': os.getenv("CSFLOAT_API_KEY")}
-CSF_SELL_FEE = 0.021
+CSF_SELL_FEE = 0.021  # 0.1% extra just to be sure
 GLOBAL_POST_REQUEST_SLEEP = 0.7
 
 
