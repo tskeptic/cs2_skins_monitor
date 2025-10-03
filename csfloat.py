@@ -32,7 +32,10 @@ def get_listings(skin_name: str, qty: int = 3) -> list[dict]:
     req.raise_for_status()
     if not req.from_cache:
         time.sleep(GLOBAL_POST_REQUEST_SLEEP)
-    return req.json()['data']
+    result = req.json()['data']
+    if len(result) < 1:
+        print(f'Warning: No listings found for "{skin_name}"')
+    return result
 
 
 def get_buy_orders(listing: dict, qty: int = 15) -> list[dict]:
@@ -43,7 +46,10 @@ def get_buy_orders(listing: dict, qty: int = 15) -> list[dict]:
     req.raise_for_status()
     if not req.from_cache:
         time.sleep(GLOBAL_POST_REQUEST_SLEEP)
-    return req.json()
+    result = req.json()
+    if len(result) < 1:
+        print(f'Warning: No buy orders found for listing id "{listing_id}"')
+    return result
 
 
 def get_sales_graph(skin_name: str) -> list[dict]:
@@ -52,7 +58,10 @@ def get_sales_graph(skin_name: str) -> list[dict]:
     req.raise_for_status()
     if not req.from_cache:
         time.sleep(GLOBAL_POST_REQUEST_SLEEP)
-    return req.json()
+    result = req.json()
+    if len(result) < 1:
+        print(f'Warning: No sales history found for "{skin_name}"')
+    return result
 
 
 def gather_current_prices(orders_data: list[dict]) -> list[dict]:
