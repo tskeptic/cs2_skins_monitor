@@ -22,7 +22,7 @@ requests_cache.install_cache(
 CSFLOAT_BASE_URL = "https://csfloat.com/api/v1"
 HEADERS = {'Authorization': os.getenv("CSFLOAT_API_KEY")}
 CSF_SELL_FEE = 0.021  # 0.1% extra just to be sure
-GLOBAL_POST_REQUEST_SLEEP = 0.7
+GLOBAL_POST_REQUEST_SLEEP = 1.3
 
 
 def get_listings(skin_name: str, qty: int = 3) -> list[dict]:
@@ -35,7 +35,7 @@ def get_listings(skin_name: str, qty: int = 3) -> list[dict]:
     return req.json()['data']
 
 
-def get_buy_orders(listing: dict, qty: int = 5) -> list[dict]:
+def get_buy_orders(listing: dict, qty: int = 15) -> list[dict]:
     """Obtains current buy orders for the listing"""
     listing_id = listing.get('id')
     payload = {'limit': qty}
@@ -67,7 +67,7 @@ def gather_current_prices(orders_data: list[dict]) -> list[dict]:
         listings = get_listings(skin)
         lowest_sell_price = listings[0]['price'] / 100
         estimated_price = listings[0]['reference'].get('predicted_price', listings[0]['reference'].get('base_price')) / 100
-        buy_orders = get_buy_orders(listings[0])
+        buy_orders = get_buy_orders(listings[0], qty=2)
         filtered_buy_orders = [b for b in buy_orders if b['qty'] >= min_buy_orders_qty]
         max_buy_order_price = filtered_buy_orders[0]['price'] / 100
         sales_history = get_sales_graph(skin)[:history_period]
