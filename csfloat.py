@@ -25,7 +25,7 @@ CSF_SELL_FEE = 0.021  # 0.1% extra just to be sure
 GLOBAL_POST_REQUEST_SLEEP = 1.3
 
 
-def get_listings(skin_name: str, qty: int = 3) -> list[dict]:
+def get_listings(skin_name: str, qty: int = 5) -> list[dict]:
     """Obtain current selling listings for the item"""
     payload = {'limit': qty, 'sort_by': 'lowest_price', 'type': 'buy_now', 'market_hash_name': skin_name}
     req = requests.get(f'{CSFLOAT_BASE_URL}/listings', headers=HEADERS, params=payload)
@@ -38,7 +38,7 @@ def get_listings(skin_name: str, qty: int = 3) -> list[dict]:
     return result
 
 
-def get_buy_orders(listing: dict, qty: int = 15) -> list[dict]:
+def get_buy_orders(listing: dict, qty: int = 10) -> list[dict]:
     """Obtains current buy orders for the listing"""
     listing_id = listing.get('id')
     payload = {'limit': qty}
@@ -76,9 +76,9 @@ def gather_current_prices(orders_data: list[dict]) -> list[dict]:
         listings = get_listings(skin)
         lowest_sell_price = listings[0]['price'] / 100
         estimated_price = listings[0]['reference'].get('predicted_price', listings[0]['reference'].get('base_price')) / 100
-        buy_orders = get_buy_orders(listings[0], qty=2)
-        filtered_buy_orders = [b for b in buy_orders if b['qty'] >= min_buy_orders_qty]
-        max_buy_order_price = filtered_buy_orders[0]['price'] / 100
+        buy_orders = get_buy_orders(listings[0])
+        chosen_buy_order = next((b for b in buy_orders if b['qty'] >= min_buy_orders_qty), buy_orders[2 if len(buy_orders) >= 3 else -1])
+        max_buy_order_price = chosen_buy_order['price'] / 100
         sales_history = get_sales_graph(skin)[:history_period]
         avg_history_sold_count = int(sum([i['count'] for i in sales_history]) / history_period)
         avg_history_sold_price = round(sum([i['avg_price'] for i in sales_history]) / history_period / 100, 2)
